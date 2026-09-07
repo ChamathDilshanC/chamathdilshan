@@ -6,50 +6,81 @@ on:
   pull_request:
 
 jobs:
-  validate:
-    name: Validate submodule pointers
+  manifest:
+    name: Validate .gitmodules
     runs-on: ubuntu-latest
     steps:
+      # No submodule checkout: the submodule repos are private and the default
+      # GITHUB_TOKEN is scoped to this repository only.
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
 
       - name: .gitmodules is present and parseable
         run: |
           test -f .gitmodules || { echo "::error::.gitmodules missing"; exit 1; }
           git config -f .gitmodules --list
 
-      - name: Every submodule declares a tracking branch
+      - name: Every submodule declares a path, url and branch
         run: |
           fail=0
-          for name in $(git config -f .gitmodules --name-only --get-regexp '^submodule\..*\.path$' | sed 's/^submodule\.//; s/\.path$//'); do
+          names="$(git config -f .gitmodules --name-only --get-regexp '^submodule\..*\.path$' \
+                   | sed 's/^submodule\.//; s/\.path$//')"
+          test -n "$names" || { echo "::error::no submodules declared"; exit 1; }
+
+          for name in $names; do
+            path="$(git config -f .gitmodules --get "submodule.$name.path" || true)"
+            url="$(git config -f .gitmodules --get "submodule.$name.url" || true)"
             branch="$(git config -f .gitmodules --get "submodule.$name.branch" || true)"
-            if [ -z "$branch" ]; then
-              echo "::error::submodule '$name' has no 'branch' set in .gitmodules"
+
+            [ -n "$url" ]    || { echo "::error::submodule '$name' has no url";    fail=1; }
+            [ -n "$branch" ] || { echo "::error::submodule '$name' has no branch"; fail=1; }
+
+            if [ "$(git ls-tree HEAD "$path" | awk '{print $2}')" != "commit" ]; then
+              echo "::error::'$path' is not registered as a gitlink — it was committed as regular files"
               fail=1
-            else
-              echo "  $name -> $branch"
             fi
+            echo "  $name -> $path @ $branch"
           done
           exit $fail
 
-      - name: Pinned commits exist on a remote branch
+      - name: No .env files tracked
         run: |
-          git submodule foreach --quiet '
-            if ! git branch -r --contains HEAD | grep -q .; then
-              echo "::error::$name is pinned to a commit that is not pushed to any remote branch"
-              exit 1
-            fi
-            echo "  $name @ $(git rev-parse --short HEAD) OK"
-          '
-
-      - name: No nested .env files committed
-        run: |
-          bad="$(git ls-files --recurse-submodules | grep -E '(^|/)\.env($|\.)' | grep -Ev '\.(example|sample|template)$' || true)"
+          bad="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -Ev '\.(example|sample|template)$' || true)"
           if [ -n "$bad" ]; then
             echo "::error::a .env file is tracked in Git"
             echo "$bad"
             exit 1
           fi
           echo "  clean"
+
+  pointers:
+    name: Validate pinned commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reading private submodule repos needs a PAT with 'repo' scope stored as
+      # the SUBMODULE_TOKEN secret. Without it this job reports and passes.
+      - name: Check pinned commits exist on their remotes
+        env:
+          GH_TOKEN: ${{ secrets.SUBMODULE_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::notice::SUBMODULE_TOKEN not set — skipping pinned-commit verification."
+            echo "Add a PAT with 'repo' scope as SUBMODULE_TOKEN to enable it."
+            exit 0
+          fi
+
+          fail=0
+          while read -r mode type sha path; do
+            [ "$type" = "commit" ] || continue
+            url="$(git config -f .gitmodules --get-regexp '^submodule\..*\.url$' \
+                   | awk -v p="$path" '$0 ~ p {print $2}' | head -1)"
+            repo="$(echo "$url" | sed -E 's#https://github.com/##; s#\.git$##')"
+            if gh api "repos/$repo/commits/$sha" --silent 2>/dev/null; then
+              echo "  $path @ ${sha:0:7} exists on $repo"
+            else
+              echo "::error::$path is pinned to $sha which is not pushed to $repo"
+              fail=1
+            fi
+          done < <(git ls-tree HEAD)
+          exit $fail

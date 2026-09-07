@@ -292,7 +292,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const { tags = [], paths = [] } = await req.json();
-  for (const t of tags) revalidateTag(t);
+  // Next 16 requires a cacheLife profile as the second argument.
+  // { expire: 0 } drops the entries immediately, which is what an
+  // "content just changed" invalidation means.
+  for (const t of tags) revalidateTag(t, { expire: 0 });
   for (const p of paths) revalidatePath(p);
   return NextResponse.json({ revalidated: true, tags, paths });
 }
