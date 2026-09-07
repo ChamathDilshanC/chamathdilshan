@@ -26,9 +26,18 @@ if [ -n "$secrets" ]; then
 fi
 
 # --- Obvious inline secrets ---
-if [ -n "$staged" ] && git diff --cached -- $staged 2>/dev/null | grep -Eq '^\+.*(GITHUB_CLIENT_SECRET|SERVICE_ROLE_KEY|SESSION_SECRET|BEGIN [A-Z ]*PRIVATE KEY)[[:space:]]*[=:][[:space:]]*[A-Za-z0-9_\-]{8,}'; then
-  echo "pre-commit: a real-looking secret value is staged." >&2
-  fail=1
+# Flags an assignment to a known secret name with a non-empty value, unless the
+# value is an obvious placeholder (CI fixtures, .env.example, docs).
+VALUE_RE='^\+.*(GITHUB_CLIENT_SECRET|SERVICE_ROLE_KEY|SESSION_SECRET|CACHE_REVALIDATE_SECRET|CDN_PURGE_TOKEN|BEGIN [A-Z ]*PRIVATE KEY)[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_/+-]{8,}'
+PLACEHOLDER_RE='placeholder|example|changeme|change-me|your[-_]|dummy|sample|fake|test|secret-here|xxxx|<[^>]+>|\$\{|\$\('
+
+if [ -n "$staged" ]; then
+  leaked="$(git diff --cached -- $staged 2>/dev/null | grep -E "$VALUE_RE" | grep -Eiv "$PLACEHOLDER_RE" || true)"
+  if [ -n "$leaked" ]; then
+    echo "pre-commit: a real-looking secret value is staged:" >&2
+    printf '%s\n' "$leaked" >&2
+    fail=1
+  fi
 fi
 
 exit "$fail"
