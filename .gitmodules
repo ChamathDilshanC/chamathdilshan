@@ -1,0 +1,9 @@
+[submodule "chamathdilshan.dev"]
+	path = chamathdilshan.dev
+	url = https://github.com/ChamathDilshanC/chamathdilshan.dev.git
+	branch = main
+
+[submodule "api.chamathdilshan.dev"]
+	path = api.chamathdilshan.dev
+	url = https://github.com/ChamathDilshanC/api.chamathdilshan.dev.git
+	branch = main

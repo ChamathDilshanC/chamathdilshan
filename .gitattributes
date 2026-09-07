@@ -1,0 +1,38 @@
+# Normalise line endings across Windows / Linux / macOS
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Shell scripts must stay LF (they run in CI containers)
+*.sh    text eol=lf
+
+# Binary assets — never diff or normalise
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.zip   binary
+
+# Lockfiles: keep out of diffs / language stats
+package-lock.json   -diff linguist-generated
+pnpm-lock.yaml      -diff linguist-generated
+poetry.lock         -diff linguist-generated
+uv.lock             -diff linguist-generated
+
+# Generated API types are not hand-written source
+lib/api-types.ts    linguist-generated
+
+# Docs drive the repo language stats less than code
+*.md    linguist-documentation

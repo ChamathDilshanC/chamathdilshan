@@ -1,0 +1,46 @@
+name: Commit Policy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  authorship:
+    name: Author identity & AI attribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine commit range
+        id: range
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "range=${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "range=${{ github.event.before }}..${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reject AI attribution trailers  (GITPUSH.md §4, §11, §24)
+        run: |
+          range="${{ steps.range.outputs.range }}"
+          if git log "$range" --format='%B' | grep -Ein 'co-authored-by:.*(claude|anthropic|copilot)|generated with \[?claude|🤖 generated'; then
+            echo "::error::AI attribution found in commit messages. See GITPUSH.md §4."
+            exit 1
+          fi
+          echo "clean"
+
+      - name: Verify author and committer  (GITPUSH.md §5)
+        run: |
+          range="${{ steps.range.outputs.range }}"
+          fail=0
+          while read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              ChamathDilshanC*) ;;
+              *) echo "::error::unexpected identity: $line"; fail=1 ;;
+            esac
+          done < <(git log "$range" --format='%an|%cn' | tr '|' '\n' | sort -u)
+          exit $fail

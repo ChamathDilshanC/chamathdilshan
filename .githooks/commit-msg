@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Reject commit messages carrying AI attribution trailers.  (GITPUSH.md §4, §9, §23)
+# Install:  git config core.hooksPath .githooks
+set -euo pipefail
+
+msg_file="$1"
+msg="$(cat "$msg_file")"
+
+if printf '%s' "$msg" | grep -Eiq '^[[:space:]]*co-authored-by:.*(claude|anthropic|copilot|gpt|ai)'; then
+  echo "commit-msg: AI co-author trailer is not allowed in this repository." >&2
+  echo "            See GITPUSH.md §4." >&2
+  exit 1
+fi
+
+if printf '%s' "$msg" | grep -Eiq 'generated with \[?claude|🤖 generated'; then
+  echo "commit-msg: AI generation footer is not allowed in this repository." >&2
+  exit 1
+fi
+
+# Conventional prefix check (GITPUSH.md §8)
+first_line="$(printf '%s' "$msg" | sed -n '1p')"
+if ! printf '%s' "$first_line" | grep -Eq '^(feat|fix|docs|refactor|test|chore|perf|security)(\(.+\))?: .+'; then
+  echo "commit-msg: subject must be '<type>: <description>'." >&2
+  echo "            types: feat fix docs refactor test chore perf security" >&2
+  echo "            got: $first_line" >&2
+  exit 1
+fi

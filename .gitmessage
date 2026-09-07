@@ -1,0 +1,18 @@
+# <type>: <short description in imperative mood, max ~72 chars>
+#
+# Types: feat | fix | docs | refactor | test | chore | perf | security
+#
+# Examples:
+#   feat: add research management system
+#   fix: secure admin API authorization
+#   security: enforce owner id check on admin middleware
+#   chore: bump frontend submodule to project card grid
+#
+# Body (optional) — what changed and why, not how:
+#
+#
+# Checklist before committing:
+#   [ ] Author/committer is ChamathDilshanC
+#   [ ] No secrets, .env files, keys or tokens staged
+#   [ ] No AI attribution trailers
+#   [ ] Submodule pointers only bumped after the submodule commit is pushed

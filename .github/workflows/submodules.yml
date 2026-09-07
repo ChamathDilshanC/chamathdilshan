@@ -1,0 +1,55 @@
+name: Submodules
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate submodule pointers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: .gitmodules is present and parseable
+        run: |
+          test -f .gitmodules || { echo "::error::.gitmodules missing"; exit 1; }
+          git config -f .gitmodules --list
+
+      - name: Every submodule declares a tracking branch
+        run: |
+          fail=0
+          for name in $(git config -f .gitmodules --name-only --get-regexp '^submodule\..*\.path$' | sed 's/^submodule\.//; s/\.path$//'); do
+            branch="$(git config -f .gitmodules --get "submodule.$name.branch" || true)"
+            if [ -z "$branch" ]; then
+              echo "::error::submodule '$name' has no 'branch' set in .gitmodules"
+              fail=1
+            else
+              echo "  $name -> $branch"
+            fi
+          done
+          exit $fail
+
+      - name: Pinned commits exist on a remote branch
+        run: |
+          git submodule foreach --quiet '
+            if ! git branch -r --contains HEAD | grep -q .; then
+              echo "::error::$name is pinned to a commit that is not pushed to any remote branch"
+              exit 1
+            fi
+            echo "  $name @ $(git rev-parse --short HEAD) OK"
+          '
+
+      - name: No nested .env files committed
+        run: |
+          bad="$(git ls-files --recurse-submodules | grep -E '(^|/)\.env($|\.)' | grep -Ev '\.(example|sample|template)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "::error::a .env file is tracked in Git"
+            echo "$bad"
+            exit 1
+          fi
+          echo "  clean"

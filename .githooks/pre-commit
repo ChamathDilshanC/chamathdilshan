@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Block secrets and wrong identity before a commit is created.
+# Install:  git config core.hooksPath .githooks
+set -uo pipefail
+
+EXPECTED_NAME="ChamathDilshanC"
+fail=0
+
+# --- Identity (GITPUSH.md §2, §5) ---
+if [ "$(git config user.name || true)" != "$EXPECTED_NAME" ]; then
+  echo "pre-commit: user.name must be $EXPECTED_NAME (see GITPUSH.md §6)." >&2
+  fail=1
+fi
+
+# --- Secret-looking files (SECURITY.md §11) ---
+# Template files (*.example, *.sample) are explicitly allowed.
+SECRET_RE='(^|/)\.env($|\.)|\.pem$|\.key$|\.p12$|\.pfx$|credentials.*\.json$|service-account.*\.json$'
+ALLOW_RE='\.(example|sample|template)$'
+
+staged="$(git diff --cached --name-only --diff-filter=ACM)"
+secrets="$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" | grep -Ev "$ALLOW_RE" || true)"
+if [ -n "$secrets" ]; then
+  echo "pre-commit: refusing to commit a secret-looking file:" >&2
+  printf '%s\n' "$secrets" >&2
+  fail=1
+fi
+
+# --- Obvious inline secrets ---
+if [ -n "$staged" ] && git diff --cached -- $staged 2>/dev/null | grep -Eq '^\+.*(GITHUB_CLIENT_SECRET|SERVICE_ROLE_KEY|SESSION_SECRET|BEGIN [A-Z ]*PRIVATE KEY)[[:space:]]*[=:][[:space:]]*[A-Za-z0-9_\-]{8,}'; then
+  echo "pre-commit: a real-looking secret value is staged." >&2
+  fail=1
+fi
+
+exit "$fail"
