@@ -1,7 +1,7 @@
 # Admin panel & content API
 
 Everything on the public site — every section's text and images, projects,
-journal articles, skills and media — is edited in the owner-only admin panel at
+journal articles, work experience, skills and media — is edited in the owner-only admin panel at
 `/ChamathDilshanC`. Nothing needs a code change or a redeploy.
 
 ```text
@@ -22,9 +22,10 @@ journal articles, skills and media — is edited in the owner-only admin panel a
 
 | Admin page | Controls |
 |---|---|
-| **Sections** | 22 blocks: site settings, navigation, FAQ, footer, every home section (hero, about, selected-work heading, services, engagements/pricing, testimonials, CTA band, numbers, journal heading), **home layout** (order and visibility of home sections), and the projects / journal / about / contact pages |
+| **Sections** | 23 blocks: site settings, navigation, FAQ, footer, every home section (hero, about, selected-work heading, services, engagements/pricing, testimonials, CTA band, numbers, journal heading), **home layout** (order and visibility of home sections), and the projects / journal / about / contact pages |
 | **Projects** | Case studies: thumbnail (cards), hero **image or video**, a gallery of **multiple images and videos** (drag to reorder, alt text each), story, results, tech stack, live/source links, featured + published, order |
 | **Journal** | Articles: cover, date, category, sections of paragraphs with up to two images each, published |
+| **Experience** | The work timeline on /about: one entry per company (name, location, website, optional logo) with every role held there (title, employment type, start and end month, summary, highlights, skills). A promotion is a new role at the same company; leave the end month empty for the current role. Companies and roles are ordered by date, newest first; hide a company with its switch |
 | **Skills** | Name, category, optional logo; toggle the home strip and the about-page grid; order |
 | **Media** | Upload (drag & drop, many at once, with progress), browse, copy URL, alt text, delete (warns if the file is still used) |
 | **Activity** | Every sign-in, blocked attempt and change |
@@ -53,8 +54,8 @@ The project has exactly **one Core Author: `chamathdilshanc`** (the GitHub
 account written `ChamathDilshanC` elsewhere in the repos — GitHub handles are
 case-insensitive). There is no second Core Author, and none may be added.
 
-- The CMS stores **no author records**. Projects, articles, sections, skills and
-  media have no author field, so no API call, admin form, seed run or migration
+- The CMS stores **no author records**. Projects, articles, sections, experience,
+  skills and media have no author field, so no API call, admin form, seed run or migration
   can create another Core Author. `tests/unit/test_ownership.py` in the API
   fails if a table, write schema or seed entry ever gains an author field, and
   checks that the API rejects one with 422.
@@ -142,7 +143,7 @@ Open `http://localhost:3000/ChamathDilshanC`.
 ## 5. How changes reach the site
 
 - Public pages read the API through `lib/content.ts` with Next.js cache tags
-  (`content`, `projects`, `project:<slug>`, `blog`, `post:<slug>`, `skills`).
+  (`content`, `projects`, `project:<slug>`, `blog`, `post:<slug>`, `skills`, `experience`).
 - Every admin save invalidates Redis and calls the site's `/api/revalidate` with those
   tags, so the next visit renders fresh content. New projects and articles render on
   first visit (`dynamicParams = true`).
@@ -176,6 +177,7 @@ Public (cacheable, ETag):
 | GET | `/api/projects`, `/api/projects/{slug}` | published projects |
 | GET | `/api/posts`, `/api/posts/{slug}` | published articles |
 | GET | `/api/skills` | skills in order |
+| GET | `/api/experience` | visible companies with their roles, most recent first |
 
 Auth: `GET /api/auth/google/login`, `GET /api/auth/google/callback`,
 `GET /api/auth/challenge`, `POST /api/auth/verify`, `POST /api/auth/resend`,
@@ -183,6 +185,6 @@ Auth: `GET /api/auth/google/login`, `GET /api/auth/google/callback`,
 
 Admin (session + trusted Origin, never cached): `/api/admin/overview`,
 `/api/admin/sections[/{key}]`, `/api/admin/projects[/{id}|/reorder]`,
-`/api/admin/posts[/{id}]`, `/api/admin/skills[/{id}|/reorder]`,
-`/api/admin/media[/sign|/{id}|/{id}/usages]`, `/api/admin/schemas/{project|post|skill}`,
+`/api/admin/posts[/{id}]`, `/api/admin/skills[/{id}|/reorder]`, `/api/admin/experience[/{id}]`,
+`/api/admin/media[/sign|/{id}|/{id}/usages]`, `/api/admin/schemas/{project|post|skill|experience}`,
 `/api/admin/audit-logs`. Interactive docs at `/docs` outside production.

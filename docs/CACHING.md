@@ -455,7 +455,9 @@ Next public request → cache miss → fresh render → re-cached
 | Blog publish/update | `blog`, `post:<slug>`, `content` | same | `/blog`, `/blog/<slug>`, `/`, `/rss.xml` |
 | Research publish/update | `research`, `research:<slug>`, `content` | same | `/research`, `/research/<slug>` |
 | Profile / about update | `profile` | `profile` | `/`, `/about` |
-| Skills/experience/education | `taxonomy` | `taxonomy` | `/skills`, `/experience`, `/education`, `/` |
+| Skills | `skills` | `skills` | `/`, `/about` |
+| Experience (companies and roles) | `experience` | `experience` | `/about` |
+| Education | `taxonomy` | `taxonomy` | `/education` |
 | Certifications/achievements | `credentials` | `credentials` | `/certifications`, `/achievements` |
 | Media replace | `media`, plus owning entity tag | entity tag | entity path |
 | Site settings | `settings` | `settings` | `/` (and layout-wide) |
