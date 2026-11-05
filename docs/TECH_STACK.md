@@ -1,5 +1,11 @@
 # ChamathDilshanC — Technology Stack
 
+> **Update (Nov 2026):** the admin panel is implemented. Sign-in uses Google
+> OpenID Connect plus a one-time code emailed through Resend (not GitHub OAuth),
+> and media is stored on Cloudinary (not Supabase Storage). See
+> [ADMIN_CMS.md](ADMIN_CMS.md) and [SECURITY.md](SECURITY.md) §4–§5. Sections of
+> this document that mention GitHub OAuth describe the original plan.
+
 > Production technology stack and system architecture for the ChamathDilshanC personal professional platform.
 
 ---
@@ -55,8 +61,8 @@
 | Backend Language | Python | Backend development |
 | Validation | Pydantic | Request/response validation |
 | Database | Supabase PostgreSQL | Primary application database |
-| Storage | Supabase Storage | Images, PDFs, documents |
-| Authentication | GitHub OAuth | Admin authentication |
+| Media | Cloudinary | Images and videos, resized and converted on delivery |
+| Authentication | Google OpenID Connect + Resend email code | Owner-only admin sign-in |
 | API Documentation | OpenAPI / Swagger | API documentation |
 | Version Control | Git + GitHub | Source control |
 | CI/CD | GitHub Actions | Automated testing and deployment |

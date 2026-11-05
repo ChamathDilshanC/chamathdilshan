@@ -44,13 +44,13 @@ The platform follows a defense-in-depth security model.
      Public Routes            Admin Routes
                                     │
                                     ▼
-                              GitHub OAuth
+                         Google OpenID Connect
                                     │
                                     ▼
-                           GitHub Identity Check
+                     Owner Email (+ optional sub) Check
                                     │
                                     ▼
-                           Owner ID Verification
+                    One-time Code Emailed via Resend
                                     │
                                     ▼
                             Secure Session
@@ -98,66 +98,68 @@ The security architecture is designed with these threats in mind.
 
 ## Authentication Provider
 
-Administrative authentication uses **GitHub OAuth**.
+Administrative sign-in uses **two factors**:
 
-The application must not implement a separate administrator username/password authentication system.
+1. **Google OpenID Connect** — proves control of the owner's Google account.
+2. **A one-time 6-digit code emailed through Resend** — proves control of the inbox.
+
+The application must not implement a separate administrator username/password system.
 
 Authentication flow:
 
 ```text
-User
+/ChamathDilshanC/login
+ │  "Continue with Google"
+ ▼
+GET  api/auth/google/login        state + nonce + PKCE stored in a signed, HttpOnly cookie
  │
  ▼
-/ChamathDilshanC
+Google account chooser            login_hint = ADMIN_EMAIL
  │
  ▼
-Login Page
+GET  api/auth/google/callback
+ │   ├── validate state (constant-time)
+ │   ├── exchange code with PKCE verifier (server-to-server, TLS)
+ │   ├── check id_token iss / aud / exp / nonce
+ │   ├── email_verified == true
+ │   ├── email == ADMIN_EMAIL           ── no ──► audit "auth.denied" ──► login?error=forbidden
+ │   └── sub == ADMIN_GOOGLE_SUB (if set)
+ ▼
+Login challenge created           only an HMAC of the code is stored; 10-minute expiry
+ │   code emailed via Resend
+ ▼
+/ChamathDilshanC/verify
  │
  ▼
-GitHub OAuth
+POST api/auth/verify              max 5 attempts, single use, trusted Origin only
  │
  ▼
-GitHub Authorization
- │
- ▼
-OAuth Callback
- │
- ▼
-Backend Identity Validation
- │
- ▼
-GitHub Owner Verification
- │
- ▼
-Secure Session
+Server-side session cookie        HttpOnly · Secure · SameSite=Lax
  │
  ▼
 Admin Dashboard
 ```
 
+A stolen Google session alone cannot reach the dashboard without the inbox,
+and the code alone is useless without first completing Google sign-in in the
+same browser (the challenge is bound to a signed cookie).
+
 ---
 
-# 5. GitHub Owner Authorization
+# 5. Owner Authorization
 
-The administrator account is:
-
-```text
-GitHub Username:
-ChamathDilshanC
-```
-
-Authorization should primarily use the immutable GitHub numeric user ID.
-
-Recommended environment configuration:
+The administrator account is configured on the API:
 
 ```env
-GITHUB_OWNER_ID=<github-user-id>
-GITHUB_OWNER_USERNAME=ChamathDilshanC
+ADMIN_EMAIL=chamathdilshan.dev@gmail.com
+ADMIN_GOOGLE_SUB=            # optional, immutable Google account id
 ```
 
-The username may be used for display and secondary validation.
-
-The numeric GitHub user ID should be treated as the primary authorization identifier.
+- The Google email must match `ADMIN_EMAIL` exactly (case-insensitive) and be verified by Google.
+- When `ADMIN_GOOGLE_SUB` is set, the immutable Google `sub` must also match, so a
+  deleted-and-recreated address can never pass.
+- Every admin request re-checks the session's email against `ADMIN_EMAIL`, so changing the
+  variable ends existing sessions immediately.
 
 ---
 
@@ -193,14 +195,16 @@ https://<domain>/ChamathDilshanC
 
 The URL itself is not considered a security mechanism.
 
-An attacker who knows the URL must still be unable to access the dashboard without successful GitHub authentication and owner verification.
+An attacker who knows the URL must still be unable to access the dashboard without successful Google authentication, owner verification and the emailed code.
 
 Security depends on:
 
 ```text
-GitHub OAuth
+Google OpenID Connect
 +
-Owner ID Verification
+Owner Email Verification
++
+Emailed One-time Code
 +
 Secure Session
 +
@@ -276,39 +280,25 @@ Git repositories
 
 # 10. OAuth Security
 
-The OAuth implementation must:
+The Google sign-in implementation (`app/integrations/google.py`, `app/api/auth/routes.py`):
 
-- Validate the OAuth `state` parameter.
-- Use the correct redirect URI.
-- Never expose the GitHub client secret to the browser.
-- Keep OAuth credentials on the server.
-- Validate the authenticated GitHub identity server-side.
-- Reject unexpected OAuth responses.
-- Avoid accepting arbitrary redirect destinations.
+- Validates the OAuth `state` parameter with a constant-time comparison.
+- Uses PKCE (S256) and a `nonce` bound to the ID token.
+- Uses the single configured redirect URI (`GOOGLE_OAUTH_REDIRECT_URI`).
+- Never exposes the Google client secret to the browser.
+- Exchanges the code server-to-server; per OpenID Connect Core §3.1.3.7 the TLS
+  connection to Google's token endpoint stands in for the ID-token signature check,
+  and `iss`, `aud`, `exp` and `nonce` are still verified.
+- Requires `email_verified` and the owner email (and optional `sub`).
+- Only ever redirects to the fixed admin URL, never to a caller-supplied destination.
 
-Recommended flow:
+One-time codes:
 
-```text
-Browser
-   │
-   ▼
-Backend OAuth Endpoint
-   │
-   ▼
-GitHub
-   │
-   ▼
-Callback
-   │
-   ▼
-Backend
-   │
-   ├── Validate state
-   ├── Exchange authorization code
-   ├── Retrieve GitHub identity
-   ├── Verify owner ID
-   └── Create session
-```
+- 6 digits from the OS CSPRNG; only `HMAC-SHA256(SESSION_SECRET, challenge_id:code)` is stored.
+- Expire after `OTP_TTL_SECONDS` (10 minutes) and work once.
+- At most `OTP_MAX_ATTEMPTS` (5) wrong guesses per challenge, then sign-in must restart.
+- Resends are limited (`OTP_MAX_SENDS`, `OTP_RESEND_COOLDOWN_SECONDS`) and rotate the code.
+- Auth endpoints are rate limited per IP (`RATE_LIMIT_AUTH_PER_MINUTE`).
 
 ---
 
@@ -320,9 +310,11 @@ Sensitive values include:
 
 ```text
 DATABASE_URL
-GITHUB_CLIENT_SECRET
+GOOGLE_CLIENT_SECRET
+RESEND_API_KEY
+CLOUDINARY_API_SECRET
 SESSION_SECRET
-STORAGE_SECRET
+CACHE_REVALIDATE_SECRET
 API_KEYS
 ACCESS_TOKENS
 PRIVATE_KEYS
@@ -355,16 +347,20 @@ Example:
 ```env
 DATABASE_URL=
 
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-GITHUB_OWNER_ID=
-GITHUB_OWNER_USERNAME=
+ADMIN_EMAIL=
+ADMIN_GOOGLE_SUB=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_OAUTH_REDIRECT_URI=
+
+RESEND_API_KEY=
+RESEND_FROM=
 
 SESSION_SECRET=
 
-MEDIA_STORAGE_URL=
-MEDIA_STORAGE_KEY=
-MEDIA_STORAGE_SECRET=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
 PUBLIC_SITE_URL=
 ```
@@ -900,29 +896,31 @@ Simply deleting the file in a later commit is not sufficient.
 
 ---
 
-# 35. GitHub OAuth Credentials
+# 35. Third-party Credentials
 
-The following values are sensitive:
+The following values are secret and exist only in the API's environment:
 
 ```text
-GITHUB_CLIENT_SECRET
+GOOGLE_CLIENT_SECRET     Google sign-in
+RESEND_API_KEY           sends the sign-in code
+CLOUDINARY_API_SECRET    signs uploads and deletions
 ```
 
-The following may be public depending on the implementation:
+`GOOGLE_CLIENT_ID`, `CLOUDINARY_CLOUD_NAME` and `CLOUDINARY_API_KEY` are not secret.
+
+Media uploads go from the browser straight to Cloudinary with a short-lived
+signature from the API. The API records an upload only after verifying
+Cloudinary's signed response and that the URL belongs to this account, so a
+client cannot register arbitrary URLs. Deleting a file the site still uses
+requires an explicit confirmation.
+
+If a secret is exposed:
 
 ```text
-GITHUB_CLIENT_ID
-```
-
-The client secret must only exist on the server.
-
-If the secret is exposed:
-
-```text
-1. Revoke/rotate the GitHub OAuth secret.
+1. Rotate it in the provider's console (Google Cloud, Resend, Cloudinary).
 2. Update production environment variables.
 3. Review repository history.
-4. Review authentication logs.
+4. Review the audit log (admin → Activity).
 5. Investigate unauthorized access.
 ```
 
@@ -1052,9 +1050,10 @@ Before production deployment:
 ```text
 [ ] HTTPS enabled
 [ ] HTTP redirects to HTTPS
-[ ] GitHub OAuth configured
-[ ] GitHub owner ID configured
-[ ] GitHub client secret stored securely
+[ ] Google OAuth client configured (redirect URI = <API>/api/auth/google/callback)
+[ ] ADMIN_EMAIL (and ideally ADMIN_GOOGLE_SUB) configured
+[ ] Resend domain verified, RESEND_API_KEY + RESEND_FROM set
+[ ] Cloudinary credentials stored securely
 [ ] SESSION_SECRET configured
 [ ] Database credentials secured
 [ ] Admin APIs protected
@@ -1171,13 +1170,13 @@ The most important security boundary of the administration system is:
                  /ChamathDilshanC
                          │
                          ▼
-                  GitHub OAuth
+              Google OpenID Connect
                          │
                          ▼
-              GitHub Identity Validation
+           Owner Email (+ sub) Verification
                          │
                          ▼
-                 Owner ID Verification
+              Emailed One-time Code
                          │
                     ┌────┴────┐
                     │         │
@@ -1207,8 +1206,8 @@ The application must always enforce authorization server-side.
 Current security architecture:
 
 ```text
-Authentication       → GitHub OAuth
-Authorization        → GitHub Owner ID
+Authentication       → Google OpenID Connect + emailed one-time code (Resend)
+Authorization        → Owner email (+ optional Google sub)
 Admin Access         → Owner only
 Session              → Secure server-side session
 API Protection       → Server-side middleware

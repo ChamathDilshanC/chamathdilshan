@@ -36,9 +36,9 @@ Full tree and rationale: [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md)
 | Frontend | Next.js 16 (App Router), React, TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python, Pydantic, SQLAlchemy |
 | Database | Supabase PostgreSQL |
-| Storage | Supabase Storage |
+| Media | Cloudinary (images + videos, direct signed uploads) |
 | Cache | Redis + CDN + Next.js Data/Route cache |
-| Auth | GitHub OAuth (owner-only) |
+| Auth | Google sign-in + emailed one-time code via Resend (owner-only) |
 | CI/CD | GitHub Actions |
 
 ---
@@ -113,6 +113,7 @@ Checks identity, AI attribution, staged secrets, and submodule pointers.
 
 | Document | Covers |
 |---|---|
+| [docs/ADMIN_CMS.md](docs/ADMIN_CMS.md) | Admin panel, content API, sign-in, media — setup and use |
 | [docs/Architecture.md](docs/Architecture.md) | System architecture, content model, API, auth flow |
 | [docs/TECH_STACK.md](docs/TECH_STACK.md) | Technology choices and responsibilities per layer |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, authorization, secrets, hardening |

@@ -107,7 +107,7 @@ only slower.
 | FastAPI in-process | Hot small objects (settings, profile) | function + args | 30–120s | TTL only + manual clear |
 | Redis (shared) | Serialized API payloads, computed aggregates | namespaced key + tags | 60s–24h (see §7) | tag sets + explicit delete |
 | PostgreSQL | Query plans, `shared_buffers`, materialized views | query / view | view: manual/cron refresh | `REFRESH MATERIALIZED VIEW` |
-| Supabase Storage / CDN | Images, PDFs, documents | object path | 1y immutable (versioned paths) | new object path on replace |
+| Cloudinary CDN | Images, videos | public_id + version | 1y immutable (versioned URLs) | new version on replace |
 
 ---
 

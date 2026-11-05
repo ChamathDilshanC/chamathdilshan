@@ -5,6 +5,12 @@
 **Architecture Version:** 1.0
 **Status:** Planned
 
+> **Update (Nov 2026):** the admin panel is implemented. Sign-in uses Google
+> OpenID Connect plus a one-time code emailed through Resend (not GitHub OAuth),
+> and media is stored on Cloudinary (not Supabase Storage). See
+> [ADMIN_CMS.md](ADMIN_CMS.md) and [SECURITY.md](SECURITY.md) §4–§5. Sections of
+> this document that mention GitHub OAuth describe the original plan.
+
 ---
 
 ## 1. Overview
