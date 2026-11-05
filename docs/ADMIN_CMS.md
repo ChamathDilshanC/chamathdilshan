@@ -26,7 +26,7 @@ journal articles, work experience, skills and media — is edited in the owner-o
 | **Projects** | Case studies: thumbnail (cards), hero **image or video**, a gallery of **multiple images and videos** (drag to reorder, alt text each), story, results, tech stack, live/source links, featured + published, order |
 | **Journal** | Articles: cover, date, category, sections of paragraphs with up to two images each, published |
 | **Experience** | The work timeline on /about: one entry per company (name, location, website, optional logo) with every role held there (title, employment type, start and end month, summary, highlights, skills). A promotion is a new role at the same company; leave the end month empty for the current role. Companies and roles are ordered by date, newest first; hide a company with its switch |
-| **Skills** | Name, category, optional logo; toggle the home strip and the about-page grid; order |
+| **Skills** | Name, category and an icon: search [theSVG](https://thesvg.org) by name (it starts from the skill's name), pick one and choose Colour, Mono, Dark or Light, or paste any image URL. The icon shows centred under the name. Toggle the home strip and the about-page grid; order |
 | **Media** | Upload (drag & drop, many at once, with progress), browse, copy URL, alt text, delete (warns if the file is still used) |
 | **Activity** | Every sign-in, blocked attempt and change |
 
