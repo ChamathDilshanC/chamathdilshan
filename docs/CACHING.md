@@ -155,6 +155,13 @@ Vary: Accept-Encoding
 - `stale-if-error` → serve stale if the origin errors (DB outage resilience).
 - `ETag` → conditional `304 Not Modified` responses, cheap re-validation.
 
+**On Vercel**, public responses (except `immutable`) also send
+`Vercel-CDN-Cache-Control: no-store`. Without it Vercel's CDN applies the
+`s-maxage` above to the API, nothing purges it on an admin save, and the site's
+`/api/revalidate` re-renders pages from the old JSON. The site caches these reads
+itself (Data Cache + ISR), so the API stays out of Vercel's CDN; Vercel consumes the
+header, and `Cache-Control` reaches browsers and other CDNs unchanged.
+
 ## 6.2 Private responses
 
 ```http
