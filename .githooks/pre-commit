@@ -28,7 +28,7 @@ fi
 # --- Obvious inline secrets ---
 # Flags an assignment to a known secret name with a non-empty value, unless the
 # value is an obvious placeholder (CI fixtures, .env.example, docs).
-VALUE_RE='^\+.*(GITHUB_CLIENT_SECRET|SERVICE_ROLE_KEY|SESSION_SECRET|CACHE_REVALIDATE_SECRET|CDN_PURGE_TOKEN|BEGIN [A-Z ]*PRIVATE KEY)[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_/+-]{8,}'
+VALUE_RE='^\+.*(GITHUB_CLIENT_SECRET|GOOGLE_CLIENT_SECRET|RESEND_API_KEY|CLOUDINARY_API_SECRET|SERVICE_ROLE_KEY|SESSION_SECRET|CACHE_REVALIDATE_SECRET|CDN_PURGE_TOKEN|BEGIN [A-Z ]*PRIVATE KEY)[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_/+-]{8,}'
 PLACEHOLDER_RE='placeholder|example|changeme|change-me|your[-_]|dummy|sample|fake|test|secret-here|xxxx|<[^>]+>|\$\{|\$\('
 
 if [ -n "$staged" ]; then
