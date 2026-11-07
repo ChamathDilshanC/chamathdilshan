@@ -156,9 +156,9 @@ Open `http://localhost:3000/ChamathDilshanC`.
 ## 6. Media pipeline
 
 1. Admin asks `POST /api/admin/media/sign` for a short-lived Cloudinary signature.
-   Journal uploads include `folder: "journal/<post id>"`, so Cloudinary keeps each
-   article's images together under the configured root (new articles use
-   `journal/draft` until the article has been created).
+   Uploads include a content folder below the configured root: `projects/<id>`,
+   `journal/<post id>`, `sections/<section key>`, `skills/<id>`, or
+   `experience/<id>`. New records use the corresponding `draft` folder.
 2. The browser uploads straight to Cloudinary (`/auto/upload`, with progress) — videos
    never pass through the API.
 3. The browser forwards Cloudinary's response to `POST /api/admin/media`; the API checks
@@ -167,6 +167,10 @@ Open `http://localhost:3000/ChamathDilshanC`.
    (`f_auto,q_auto,c_limit,w_<width>` — AVIF/WebP at the exact width); videos stream with
    `q_auto,vc_auto`, play muted and looped, and pause on a first-frame poster for visitors
    who prefer reduced motion.
+5. Existing media can be classified and moved from the admin Media page with
+   **Organize folders**. The protected `POST /api/admin/media/organize` operation
+   detects content references, places shared files in `shared`, unused files in
+   `unassigned`, and updates stored URLs after each successful Cloudinary rename.
 
 ---
 
