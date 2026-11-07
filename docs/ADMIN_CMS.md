@@ -156,6 +156,9 @@ Open `http://localhost:3000/ChamathDilshanC`.
 ## 6. Media pipeline
 
 1. Admin asks `POST /api/admin/media/sign` for a short-lived Cloudinary signature.
+   Journal uploads include `folder: "journal/<post id>"`, so Cloudinary keeps each
+   article's images together under the configured root (new articles use
+   `journal/draft` until the article has been created).
 2. The browser uploads straight to Cloudinary (`/auto/upload`, with progress) — videos
    never pass through the API.
 3. The browser forwards Cloudinary's response to `POST /api/admin/media`; the API checks
