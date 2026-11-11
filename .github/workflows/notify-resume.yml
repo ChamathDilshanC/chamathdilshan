@@ -16,7 +16,20 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Check resume pipeline secret
+        id: secret
+        env:
+          RESUME_CORE_PAT: ${{ secrets.RESUME_CORE_PAT }}
+        run: |
+          if [ -n "$RESUME_CORE_PAT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::RESUME_CORE_PAT is not configured; skipping resume pipeline notification."
+          fi
+
       - name: Dispatch resume_update event to resume-core
+        if: steps.secret.outputs.enabled == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.RESUME_CORE_PAT }}
