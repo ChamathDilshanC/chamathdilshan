@@ -25,7 +25,7 @@ journal articles, work experience, skills and media — is edited in the owner-o
 | **Sections** | 23 blocks: site settings, navigation, FAQ, footer, every home section (hero, about, selected-work heading, services, engagements/pricing, testimonials, CTA band, numbers, journal heading), **home layout** (order and visibility of home sections), and the projects / journal / about / contact pages |
 | **Projects** | Case studies: thumbnail (cards), hero **image or video**, a gallery of **multiple images and videos** (drag to reorder, alt text each), story, results, tech stack, live/source links, featured + published, order |
 | **Journal** | Articles: cover, date, category, sections of paragraphs with up to two images each, published |
-| **Experience** | The work timeline on /about: one entry per company (name, location, website, optional logo) with every role held there (title, employment type, start and end month, summary, highlights, skills). A promotion is a new role at the same company; leave the end month empty for the current role. Companies and roles are ordered by date, newest first; hide a company with its switch |
+| **Experience** | The work timeline on /about: one entry per company (name, location, website, optional logo) with every role held there (title, employment type, start and end month, summary, highlights, skills), plus multiple protected PDF/image documents such as service letters and certificates. Each document's label becomes its public button. A promotion is a new role at the same company; leave the end month empty for the current role. Companies and roles are ordered by date, newest first; hide a company with its switch |
 | **Skills** | Name, category and an icon: search [theSVG](https://thesvg.org) by name (it starts from the skill's name), pick one and choose Colour, Mono, Dark or Light, or paste any image URL. The icon shows centred under the name. Toggle the home strip and the about-page grid; order |
 | **Media** | Upload (drag & drop, many at once, with progress), browse, copy URL, alt text, delete (warns if the file is still used) |
 | **Activity** | Every sign-in, blocked attempt and change |
@@ -172,6 +172,21 @@ Open `http://localhost:3000/ChamathDilshanC`.
    detects content references, places shared files in `shared`, unused files in
    `unassigned`, and updates stored URLs after each successful Cloudinary rename.
 
+### Protected experience documents
+
+1. The Experience editor accepts multiple PDF, JPG, PNG or WebP files, up to 15 MB each.
+2. These uploads use Cloudinary's `authenticated` delivery type and are not added to the
+   public Media library. The public experience response contains only the document ID,
+   label, format and page count—never its Cloudinary location.
+3. A published document is delivered through
+   `GET /api/experience/{experience_id}/documents/{document_id}`. The API validates the
+   published experience, fetches the protected original with a short-lived server-side
+   URL, and returns an inline, `no-store` response.
+4. The site renders PDF and image bytes to canvas in a watermarked modal. It removes the
+   native download toolbar and blocks drag, context-menu, print/save shortcuts and
+   inactive-window capture attempts. Browser code cannot guarantee prevention of an OS,
+   camera or external screen capture; the controls are deterrence, not DRM.
+
 ---
 
 ## 7. API reference
@@ -185,6 +200,7 @@ Public (cacheable, ETag):
 | GET | `/api/posts`, `/api/posts/{slug}` | published articles |
 | GET | `/api/skills` | skills in order |
 | GET | `/api/experience` | visible companies with their roles, most recent first |
+| GET | `/api/experience/{id}/documents/{document_id}` | inline protected document on a published experience |
 
 Auth: `GET /api/auth/google/login`, `GET /api/auth/google/callback`,
 `GET /api/auth/challenge`, `POST /api/auth/verify`, `POST /api/auth/resend`,
@@ -193,5 +209,6 @@ Auth: `GET /api/auth/google/login`, `GET /api/auth/google/callback`,
 Admin (session + trusted Origin, never cached): `/api/admin/overview`,
 `/api/admin/sections[/{key}]`, `/api/admin/projects[/{id}|/reorder]`,
 `/api/admin/posts[/{id}]`, `/api/admin/skills[/{id}|/reorder]`, `/api/admin/experience[/{id}]`,
+`/api/admin/experience-documents[/sign]`,
 `/api/admin/media[/sign|/{id}|/{id}/usages]`, `/api/admin/schemas/{project|post|skill|experience}`,
 `/api/admin/audit-logs`. Interactive docs at `/docs` outside production.
