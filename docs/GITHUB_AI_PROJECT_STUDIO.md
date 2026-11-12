@@ -88,10 +88,12 @@ OPENROUTER_MODEL=openrouter/free
 AI_PROVIDER_ORDER=gemini,groq,openrouter
 AI_FALLBACK_ENABLED=true
 AI_PROVIDER_TIMEOUT_SECONDS=45
+AI_TOTAL_TIMEOUT_SECONDS=180
 ```
 
 OpenRouter is restricted to the configured model (`openrouter/free` by default);
-the application never silently selects a paid model. Missing provider keys are
+the application rejects non-free OpenRouter model overrides and never silently
+selects a paid model. Missing provider keys are
 skipped, authentication failures stop the chain, and transient availability or
 rate-limit failures may move to the next configured provider.
 
