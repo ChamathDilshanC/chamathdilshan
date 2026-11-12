@@ -74,7 +74,7 @@ case-insensitive). There is no second Core Author, and none may be added.
    your email as a test user (or publish the app).
 2. *Credentials* → *Create credentials* → *OAuth client ID* → **Web application**.
 3. Authorised redirect URIs:
-   - `https://api.chamathdilshan.dev/api/auth/google/callback`
+   - `https://api.chamathdilshan.com/api/auth/google/callback`
    - `http://localhost:8000/api/auth/google/callback` (local)
 4. Copy the client ID and secret into `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
 
@@ -111,7 +111,7 @@ The seed file `app/seed/content.json` is generated from the frontend's
 ### Frontend ↔ API
 | Variable | Where | Value |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | frontend | `https://api.chamathdilshan.dev` |
+| `NEXT_PUBLIC_API_URL` | frontend | `https://api.chamathdilshan.com` |
 | `CACHE_REVALIDATE_SECRET` | **both** | the same random string |
 | `NEXT_APP_URL`, `ALLOWED_ORIGINS` | API | `https://chamathdilshan.dev` |
 | `SESSION_SECRET` | API | `python -c "import secrets; print(secrets.token_urlsafe(48))"` |

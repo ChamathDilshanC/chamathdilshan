@@ -139,7 +139,7 @@ Runs the migrations from database/ (vendored or copied in at build — see §8).
 | Path | Repository | Stack | Deployed as | Independent host |
 |---|---|---|---|---|
 | `chamathdilshan.dev/` | `ChamathDilshanC/chamathdilshan.dev` | Next.js 16 | `https://chamathdilshan.dev` | yes |
-| `api.chamathdilshan.dev/` | `ChamathDilshanC/api.chamathdilshan.dev` | FastAPI | `https://api.chamathdilshan.dev` | yes |
+| `api.chamathdilshan.dev/` | `ChamathDilshanC/api.chamathdilshan.dev` | FastAPI | `https://api.chamathdilshan.com` | yes |
 
 Two submodules. Nothing else becomes a submodule unless it too needs its own
 independent deployment.
@@ -379,7 +379,7 @@ author and committer are `ChamathDilshanC` in the main repo and both submodules.
                                   │
                  ┌────────────────┴────────────────┐
                  ▼                                 ▼
-   https://chamathdilshan.dev            https://api.chamathdilshan.dev
+   https://chamathdilshan.dev            https://api.chamathdilshan.com
         Frontend host                         Backend host
    repo: chamathdilshan.dev            repo: api.chamathdilshan.dev
    root: repo root                     root: repo root
