@@ -130,7 +130,7 @@ Checks identity, AI attribution, staged secrets, and submodule pointers.
 
 ```text
 https://chamathdilshan.dev        ← chamathdilshan.dev repo      (repo root = app root)
-https://api.chamathdilshan.dev    ← api.chamathdilshan.dev repo  (repo root = app root)
+https://api.chamathdilshan.com    ← api.chamathdilshan.dev repo  (repo root = app root)
 ```
 
 Each application deploys on a push to **its own** repository. The main repo
