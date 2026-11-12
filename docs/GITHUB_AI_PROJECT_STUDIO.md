@@ -11,7 +11,7 @@ Discover → Analyze → Generate → Review → Design → Media → Draft / Pu
 ```
 
 The browser calls the existing `/api/admin/*` boundary. The backend owns GitHub
-access, bounded repository analysis, secret redaction, Gemini calls, validation,
+access, bounded repository analysis, secret redaction, provider calls, validation,
 draft persistence, and cache invalidation.
 
 ## Backend
@@ -23,8 +23,9 @@ draft persistence, and cache invalidation.
   generated files, binaries, sensitive files, and files beyond the configured
   budget.
 - `GET /api/admin/studio/drafts/{id}` resumes a draft after refresh.
-- `POST /api/admin/studio/drafts/{id}/generate` calls the configured Gemini
-  model and validates the response with `StudioContent` before saving it.
+- `POST /api/admin/studio/drafts/{id}/generate` tries configured providers in
+  `AI_PROVIDER_ORDER` (Gemini, Groq, then OpenRouter by default), validates every
+  response with the canonical draft schema, and saves the winning provider/model.
 - `PUT /api/admin/studio/drafts/{id}` saves reviewed content and design choices.
 - `POST /api/admin/studio/projects` creates a normal CMS project, preserving the
   legacy fields plus the Studio template/content/repository data. Publishing is
@@ -32,6 +33,8 @@ draft persistence, and cache invalidation.
 
 Migration `0004_project_studio.py` adds `project_studio_drafts`,
 `project_repositories`, and backward-compatible JSON columns on `projects`.
+Migration `0005_ai_provider_metadata.py` adds provider and fallback-attempt
+metadata to drafts.
 Apply it separately before deploying the API:
 
 ```bash
@@ -40,10 +43,11 @@ alembic upgrade head
 
 ## Security and privacy
 
-- `GITHUB_TOKEN` and `GEMINI_API_KEY` are backend-only variables.
+- `GITHUB_TOKEN`, `GEMINI_API_KEY`, `GROQ_API_KEY`, and `OPENROUTER_API_KEY` are
+  backend-only variables.
 - Public repository metadata can be discovered without a token.
 - Private repositories default to metadata-only analysis. Explicit consent is
-  required before Gemini generation.
+  required before evidence is sent to any configured AI provider.
 - `.env`, key/certificate files, credential/token files, and secret-shaped
   values are omitted or redacted.
 - The analyzer never executes repository code and sends only a compact,
@@ -77,10 +81,19 @@ GITHUB_MAX_FILES=120
 GITHUB_MAX_BYTES=750000
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-120b
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=openrouter/free
+AI_PROVIDER_ORDER=gemini,groq,openrouter
+AI_FALLBACK_ENABLED=true
+AI_PROVIDER_TIMEOUT_SECONDS=45
 ```
 
-The selected model is configurable and generation fails clearly when Gemini is
-not configured. No automatic paid-tier fallback is implemented.
+OpenRouter is restricted to the configured model (`openrouter/free` by default);
+the application never silently selects a paid model. Missing provider keys are
+skipped, authentication failures stop the chain, and transient availability or
+rate-limit failures may move to the next configured provider.
 
 ## Verification
 
@@ -100,7 +113,7 @@ npm test
 npm run build
 ```
 
-Live GitHub/Gemini calls require credentials and were not made during local
-verification. The test suite uses deterministic fixtures and pure safety
-checks; production credentials, GitHub rate limits, Cloudinary uploads, and
-Vercel runtime behavior still require deployment-environment verification.
+Live provider calls require credentials and were not made during local
+verification. The production health endpoint was reachable during this change;
+an authenticated, controlled generation on a small public repository is still
+required to verify the Vercel environment and actual provider access.
