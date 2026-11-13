@@ -288,6 +288,13 @@ export const fetchCache = "force-no-store";
 The FastAPI backend calls this **after every successful admin mutation**. It is
 protected by a shared secret (never exposed to the browser).
 
+Production configuration must set the same non-empty
+`CACHE_REVALIDATE_SECRET` in both the FastAPI deployment and the Next.js
+deployment. A `403` from this endpoint means the values do not match; the
+backend logs the rejected status without logging either value. Project listing
+reads bypass the Next.js data cache as a safety net, but the shared secret is
+still required for immediate invalidation of other tagged content and routes.
+
 ```typescript
 // app/api/revalidate/route.ts
 import { revalidateTag, revalidatePath } from "next/cache";
@@ -616,6 +623,9 @@ CDN_PURGE_TOKEN=
 
 `CACHE_REVALIDATE_SECRET` and `CDN_PURGE_TOKEN` are secrets — server-only, never
 `NEXT_PUBLIC_*`, never committed (see [GITPUSH.md](../GITPUSH.md) §14).
+Configure `CACHE_REVALIDATE_SECRET` in the hosting provider's production
+environment for both projects; do not copy it into source files or expose it
+through build-time public variables.
 
 ---
 
