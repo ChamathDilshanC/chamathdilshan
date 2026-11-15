@@ -81,7 +81,7 @@ case-insensitive). There is no second Core Author, and none may be added.
 ### Resend
 1. Add and verify the sending domain (DNS records) in Resend.
 2. Create an API key → `RESEND_API_KEY`.
-3. `RESEND_FROM="chamathdilshan.dev <auth@chamathdilshan.dev>"` (must be on the verified domain).
+3. `RESEND_FROM="chamathdilshan.com <auth@chamathdilshan.com>"` (must be on the verified domain).
 4. Locally, leave `RESEND_API_KEY` empty: with `APP_ENV=development` the code is printed in the API log.
 
 ### Cloudinary
@@ -113,11 +113,11 @@ The seed file `app/seed/content.json` is generated from the frontend's
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | frontend | `https://api.chamathdilshan.com` |
 | `CACHE_REVALIDATE_SECRET` | **both** | the same random string |
-| `NEXT_APP_URL`, `ALLOWED_ORIGINS` | API | `https://chamathdilshan.dev` |
+| `NEXT_APP_URL`, `ALLOWED_ORIGINS` | API | `https://chamathdilshan.com` |
 | `SESSION_SECRET` | API | `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
 
-The site and the API must share a registrable domain (`chamathdilshan.dev` /
-`api.chamathdilshan.dev`) so the SameSite=Lax session cookie is sent.
+The site and the API must share a registrable domain (`chamathdilshan.com` /
+`api.chamathdilshan.com`) so the SameSite=Lax session cookie is sent.
 
 ---
 
