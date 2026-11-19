@@ -713,11 +713,19 @@ origins required by the application, and upgrades insecure requests. The
 frontend also sends `X-Frame-Options: DENY` for legacy clickjacking protection
 and disables the Next.js powered-by header.
 
-The policy retains `unsafe-inline` for scripts and styles because the current
-Next.js App Router hydration and styling pipeline require inline output. It
-does not permit `unsafe-eval` or wildcard sources. Any future third-party
-origin or inline execution change must update the policy and its regression
-tests together.
+The frontend uses a fresh per-response nonce for Next.js scripts and styles;
+it does not permit `script-src 'unsafe-inline'` or `unsafe-eval`. The
+`style-src-elem 'unsafe-inline'` exception is narrowly scoped to the trusted
+toast library's runtime-injected stylesheet, while `style-src-attr
+'unsafe-inline'` preserves the existing Motion/WebGL dynamic style attributes.
+Neither exception permits JavaScript execution. Any future third-party origin
+or inline execution change must update the policy and its regression tests
+together.
+
+Nonce authorization requires dynamic rendering, so public HTML responses are
+`no-store` rather than static/ISR-cacheable. This is an intentional
+security/performance tradeoff: it prevents nonce reuse in shared cached HTML
+while preserving the existing UI and client hydration behavior.
 
 ---
 
