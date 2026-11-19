@@ -706,7 +706,18 @@ Referrer-Policy
 Permissions-Policy
 ```
 
-Legacy headers should only be enabled when supported and useful.
+The frontend enforces these headers in `chamathdilshan.dev/next.config.ts`
+through a shared policy module. Its CSP uses same-origin defaults, denies
+objects and framing, permits only the production API, Cloudinary, and theSVG
+origins required by the application, and upgrades insecure requests. The
+frontend also sends `X-Frame-Options: DENY` for legacy clickjacking protection
+and disables the Next.js powered-by header.
+
+The policy retains `unsafe-inline` for scripts and styles because the current
+Next.js App Router hydration and styling pipeline require inline output. It
+does not permit `unsafe-eval` or wildcard sources. Any future third-party
+origin or inline execution change must update the policy and its regression
+tests together.
 
 ---
 
